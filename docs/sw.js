@@ -1,5 +1,5 @@
 // node build.js 가 생성. 직접 수정하지 마세요.
-const CACHE = 'kaltoe-c2ea0ef595';
+const CACHE = 'kaltoe-9d8aaf6952';
 const SHELL = ['./', 'index.html', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/favicon-32.png'];
 
 self.addEventListener('install', e => {
