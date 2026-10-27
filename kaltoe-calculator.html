@@ -87,38 +87,6 @@ input[type="number"],input[type="time"],input[type="date"],input[type="month"],i
 .xbtn{border:0;background:none;color:var(--muted);font-size:16px;line-height:1;padding:4px 6px;border-radius:5px}
 .xbtn:hover{color:var(--warn);background:var(--warn-soft)}
 .empty-log{margin:10px 0 0;font-size:13px;color:var(--muted)}
-.days-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 12px;padding:16px 18px 10px}
-.days-head .sub{color:var(--muted);font-size:13px}
-.days-head .ghost{margin-left:auto}
-.cols,.day{display:grid;grid-template-columns:78px 112px minmax(0,1.5fr) 62px minmax(90px,1fr);gap:12px;align-items:center;padding:10px 18px}
-.cols{font-size:11.5px;color:var(--muted);letter-spacing:.04em;padding-block:6px;border-top:1px solid var(--line)}
-.day{border-top:1px solid var(--line)}
-.day.is-today{background:var(--sunk)}
-.d-date{display:flex;flex-direction:column;line-height:1.25}
-.d-date b{font-family:var(--f-num);font-weight:600;font-size:15px}
-.d-date span{font-size:12px;color:var(--muted)}
-.d-date .hol{color:var(--warn)}
-.d-in{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;font-size:13px;color:var(--muted)}
-.d-in label{display:flex;align-items:center;gap:6px}
-.d-in input[type="time"]{width:108px}
-.d-in input[type="number"]{width:64px}
-.d-leave{color:var(--ink);display:flex;align-items:center;gap:6px}
-.d-leave b{font-size:15px}
-.d-h{text-align:right;font-size:14px}
-.tag{display:inline-block;font-size:11.5px;font-weight:600;padding:1px 7px;border-radius:999px;font-family:var(--f-body);white-space:nowrap}
-.t-ot{background:var(--ot-soft);color:var(--ot)}
-.t-ok{background:var(--ok-soft);color:var(--ok)}
-.t-vac{background:var(--vac-soft);color:var(--vac)}
-.t-off{background:var(--sunk);color:var(--muted);border:1px solid var(--line)}
-.bar{position:relative;height:12px;background:var(--sunk);border-radius:3px;overflow:hidden}
-.bar i{position:absolute;top:0;bottom:0;border-radius:3px}
-.bar .b-base{left:0;background:var(--done)}
-.bar .b-extra{background:var(--ot-fill)}
-.day.is-free .b-base{background:var(--ok-fill)}
-.day.is-vac .b-base{background:var(--vac);opacity:.55}
-.bar .b-line{width:2px;background:var(--ink);opacity:.35;border-radius:0}
-.day.is-off .d-h,.day.is-off .bar{opacity:.35}
-.empty{padding:22px 18px;color:var(--muted);border-top:1px solid var(--line);margin:0}
 @media (max-width:640px){
   body{padding-block:18px 40px}
   input,select{font-size:16px}
@@ -126,14 +94,6 @@ input[type="number"],input[type="time"],input[type="date"],input[type="month"],i
   .logform{grid-template-columns:1fr 1fr}
   .logform .basis-f{grid-column:1/-1}
   .logform .primary{grid-column:1/-1;padding-block:11px}
-  .cols{display:none}
-  .day{grid-template-columns:auto minmax(0,1fr) auto;grid-template-areas:"date st h" "in in in" "bar bar bar";row-gap:9px;padding-inline:16px}
-  .d-date{grid-area:date;flex-direction:row;align-items:baseline;gap:6px}
-  .d-st{grid-area:st;justify-self:start}
-  .d-in{grid-area:in}
-  .d-h{grid-area:h}
-  .bar{grid-area:bar}
-  .days-head{padding-inline:16px}
 }
 /* 결과 */
 .stamp{border-radius:12px;padding:20px;border:1.5px solid currentColor;background:var(--surface)}
@@ -183,10 +143,22 @@ tr.heavy td{color:var(--muted)}
 .cal-sum b{font-size:clamp(16px,4.4vw,20px);font-weight:600;line-height:1.2;white-space:nowrap}
 .cal-sum .s-ot b{color:var(--ot)}
 .cal-sum .s-ok b{color:var(--ok)}
-.otstep{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:12px;padding:8px 10px;border-radius:9px;background:var(--sunk);font-size:13px;color:var(--muted)}
-.otstep .iconbtn{width:32px;height:32px;font-size:17px}
-.otstep b{font-size:16px;color:var(--ot);min-width:4.5em;text-align:center}
-.otstep .lv{margin-left:auto}
+.cal-ctl{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+.ctl-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:8px 10px;border-radius:9px;background:var(--sunk);font-size:13px;color:var(--muted)}
+.ctl-row>.k{min-width:4.6em;color:var(--ink);font-weight:500}
+.ctl-row .iconbtn{width:32px;height:32px;font-size:17px;background:var(--surface)}
+.ctl-row b{font-size:16px;color:var(--ot);min-width:4.5em;text-align:center}
+.ctl-row input[type="time"]{width:118px;background:var(--surface);padding-block:5px}
+.ctl-row .quick{display:flex;gap:4px}
+.ctl-row .quick button{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:4px 8px;font-size:12px;font-family:var(--f-num);color:var(--muted)}
+.ctl-row .quick button[aria-pressed="true"]{border-color:var(--ok-fill);color:var(--ok);background:var(--ok-soft)}
+.ctl-row .lv{margin-left:auto}
+.ctl-row .lv.free{color:var(--ok)}
+.tag{display:inline-block;font-size:11.5px;font-weight:600;padding:1px 7px;border-radius:999px;font-family:var(--f-body);white-space:nowrap}
+.t-ot{background:var(--ot-soft);color:var(--ot)}
+.t-ok{background:var(--ok-soft);color:var(--ok)}
+.t-vac{background:var(--vac-soft);color:var(--vac)}
+.t-off{background:var(--sunk);color:var(--muted);border:1px solid var(--line)}
 .groups{display:flex;flex-direction:column;gap:4px;margin:10px 0 0;font-size:12.5px}
 .groups span{display:flex;align-items:center;gap:6px}
 tr[data-ot-set]{cursor:pointer}
@@ -244,7 +216,30 @@ tr[data-ot-set] button{border:0;background:none;padding:0;font:inherit;color:inh
         <div class="logs" id="logs"></div>
       </section>
 
-  <div id="calendar"></div>
+  <section class="panel block cal-block" id="calendar" aria-label="이 달 야근·칼퇴 달력">
+    <div class="cal-sum" id="cal-sum"></div>
+    <div class="cal-ctl">
+      <div class="ctl-row">
+        <label class="k" for="cal-start">출근 시각</label>
+        <input id="cal-start" type="time" min="09:00" max="10:00" step="60">
+        <span class="quick" role="group" aria-label="출근 시각 빠른 선택">
+          <button type="button" data-start="09:00">9:00</button><button type="button" data-start="09:30">9:30</button><button type="button" data-start="10:00">10:00</button>
+        </span>
+        <span class="lv num free" id="free-lv"></span>
+      </div>
+      <div class="ctl-row">
+        <span class="k">야근 기준</span>
+        <button class="iconbtn" type="button" data-ot-step="-0.5" aria-label="야근 기준 30분 줄이기">−</button>
+        <b class="num" id="ot-val"></b>
+        <button class="iconbtn" type="button" data-ot-step="0.5" aria-label="야근 기준 30분 늘리기">+</button>
+        <span class="lv num" id="ot-lv"></span>
+      </div>
+    </div>
+    <div class="cal" id="cal-grid" role="grid"></div>
+    <p class="groups" id="cal-groups"></p>
+    <p class="cal-legend"><span><i class="sw ot"></i>야근</span><span><i class="sw free"></i>칼퇴</span><span><i class="sw hol"></i>휴일</span><span>회색은 지난 날</span></p>
+    <p class="cal-stale" id="cal-stale" hidden></p>
+  </section>
 
   <div class="grid">
     <div class="left">
@@ -268,14 +263,6 @@ tr[data-ot-set] button{border:0;background:none;padding:0;font:inherit;color:inh
             <div class="unit"><input id="cap" type="number" min="0" step="0.1" inputmode="decimal"><em>시간</em></div>
             <small id="cap-hint"></small>
           </label>
-          <label class="field"><span>평소 출근 시각</span>
-            <input id="start" type="time" min="09:00" max="10:00" step="60">
-            <small>09:00~10:00 · 10시 출근이면 칼퇴 7시간</small>
-          </label>
-          <label class="field"><span>야근하는 날 근무</span>
-            <div class="unit"><input id="ot" type="number" min="7" max="14" step="0.5" inputmode="decimal"><em>시간</em></div>
-            <small id="ot-hint"></small>
-          </label>
         </div>
         <details class="rules">
           <summary>적용한 근무 규칙</summary>
@@ -284,22 +271,13 @@ tr[data-ot-set] button{border:0;background:none;padding:0;font:inherit;color:inh
             <li>의무근무 10:00~18:00이라 18:00 퇴근을 ‘칼퇴’로 봅니다. 10시 출근이면 7시간, 9시 출근이면 8시간</li>
             <li>점심 12:00~13:00 1시간은 근무에서 뺍니다</li>
             <li>하루 8시간을 넘는 연장근무 4시간마다 휴게 30분을 더해 퇴근 시각을 계산합니다</li>
-            <li>휴가시간은 근무시간으로 인정합니다. 종일 휴가는 8시간, 시간 휴가는 그만큼 일찍 퇴근</li>
+            <li>휴가시간은 근무시간으로 인정되므로 Flex ‘전체’ 값에 이미 들어간 상태로 기록하세요</li>
             <li>목표 페이스 = 목표 근무시간 × (기준 시점까지 지난 근무일 ÷ 이 달 근무일)</li>
-            <li>공휴일·대체공휴일은 2026~2028년을 자동 반영합니다(2026년은 회사 표 기준). 회사 휴무일은 남은 근무일에서 ‘휴일’로 바꿔 주세요</li>
+            <li>공휴일·대체공휴일은 2026~2028년을 자동 반영합니다(2026년은 회사 표 기준)</li>
           </ul>
         </details>
       </section>
 
-      <section class="panel" aria-labelledby="days-h">
-        <div class="days-head">
-          <h2 id="days-h">남은 근무일</h2>
-          <span class="sub" id="days-sub"></span>
-          <button class="ghost" id="clear" type="button">이 달 입력 지우기</button>
-        </div>
-        <div class="cols" aria-hidden="true"><span>날짜</span><span>구분</span><span>출근 · 휴가 · 퇴근 예정</span><span style="text-align:right">근무</span><span>18시 기준</span></div>
-        <div id="days"></div>
-      </section>
     </div>
 
     <aside class="right" id="result" aria-live="polite"></aside>
@@ -341,7 +319,7 @@ const HOL={
 const HOL_YEARS=new Set(Object.keys(HOL).map(k=>k.slice(0,4)));
 
 function defaultState(){
-  return {month:TODAY.slice(0,7),start:'10:00',otHours:9,logs:{},tgt:{},cap:{},days:{}};
+  return {month:TODAY.slice(0,7),start:'10:00',otHours:9,logs:{},tgt:{},cap:{}};
 }
 function load(){
   try{
@@ -352,6 +330,8 @@ function load(){
     if(s.acc){for(const mo in s.acc){const a=s.acc[mo],v=(parseInt(a.h)||0)*60+(parseInt(a.m)||0);
       const f=(s.from&&s.from[mo])||TODAY;if(v&&!(s.logs[mo]||[]).length&&f.slice(0,7)===mo)s.logs[mo]=[{d:f,v,when:'before'}]}
       delete s.acc;delete s.from;delete s.seeded}
+    delete s.days; // 날짜별 입력은 없앰
+
     return s;
   }catch(e){return null}
 }
@@ -360,12 +340,7 @@ let S=load()||defaultState();
 
 const monthDates=(mo=S.month)=>{const [y,m]=mo.split('-').map(Number);const out=[];for(let d=new Date(y,m-1,1);d.getMonth()===m-1;d=addDays(d,1))out.push(ymd(d));return out};
 const isWeekday=k=>{const g=parse(k).getDay();return g!==0&&g!==6};
-function rec(k){
-  const s=S.days[k];
-  const d={status:HOL[k]?'hol':'work',start:S.start||'10:00',vac:0};
-  return s?Object.assign(d,s):d;
-}
-function ensure(k){if(!S.days[k])S.days[k]=rec(k);return S.days[k]}
+const rec=k=>({status:HOL[k]?'hol':'work',start:S.start||'10:00',vac:0});
 const startOf=r=>toMin(r.start)??toMin(S.start)??600;
 const baseOf=r=>Math.max(0,CORE_END-startOf(r)-LUNCH);
 function leaveOf(r,work){
@@ -477,56 +452,6 @@ $('#logs').addEventListener('click',e=>{
   refreshAll();
 });
 
-/* ---------- 남은 근무일 ---------- */
-function renderRows(from){
-  const ks=monthDates().filter(k=>k>=from&&isWeekday(k));
-  const box=$('#days');
-  if(!ks.length){box.innerHTML='<p class="empty">이 달에 남은 평일이 없습니다.</p>';return}
-  box.innerHTML=ks.map(k=>{
-    const r=rec(k),R=rel(k);
-    const sel=v=>r.status===v?' selected':'';
-    let inner='';
-    if(r.status==='work'){
-      inner=`<label>출근 <input type="time" id="in-${k}" data-f="start" value="${r.start}" step="60"></label>
-        <label>휴가 <input type="number" id="vac-${k}" data-f="vac" min="0" max="8" step="0.5" value="${r.vac||0}" inputmode="decimal">h</label>
-        <span class="d-leave"></span>`;
-    }else if(r.status==='vac'){
-      inner=`<span class="tag t-vac">종일 휴가 · 8시간 인정</span>`;
-    }else{
-      inner=`<span class="tag t-off">${HOL[k]||'휴일'} · 근무일 아님</span>`;
-    }
-    return `<div class="day${k===TODAY?' is-today':''}" id="row-${k}" data-k="${k}">
-      <div class="d-date"><b>${md(k)}</b><span${HOL[k]?' class="hol"':''}>${wd(k)}${R?' · '+R:''}${HOL[k]?' · '+HOL[k]:''}</span></div>
-      <select class="d-st" id="st-${k}" aria-label="${md(k)} 구분">
-        <option value="work"${sel('work')}>근무</option><option value="vac"${sel('vac')}>종일 휴가</option><option value="hol"${sel('hol')}>휴일</option>
-      </select>
-      <div class="d-in">${inner}</div>
-      <div class="d-h num"></div>
-      <div class="bar"><i class="b-base"></i><i class="b-extra"></i><i class="b-line"></i></div>
-    </div>`;
-  }).join('');
-}
-function paintRows(c){
-  const scale=Math.max(13*60,...c.rows.map(x=>x.min+60));
-  const pct=v=>(v/scale*100)+'%';
-  c.rows.forEach(x=>{
-    const row=document.getElementById('row-'+x.k);if(!row)return;
-    const isWork=x.type==='work';
-    row.classList.toggle('is-ot',isWork&&x.extra>0);
-    row.classList.toggle('is-free',isWork&&x.extra===0);
-    row.classList.toggle('is-vac',x.type==='vac');
-    row.classList.toggle('is-off',x.type==='hol');
-    row.querySelector('.d-h').textContent=x.type==='hol'?'—':hm(x.min);
-    row.querySelector('.b-base').style.width=pct(x.base);
-    const e=row.querySelector('.b-extra');e.style.left=pct(x.base);e.style.width=pct(x.extra);
-    const ln=row.querySelector('.b-line');ln.style.left=pct(x.base);ln.hidden=!isWork;
-    const lv=row.querySelector('.d-leave');
-    if(lv)lv.innerHTML=`→ <b class="num">${leaveText(x.leave)}</b> 퇴근 <span class="tag ${x.extra?'t-ot':'t-ok'}">${x.extra?'야근 +'+hm(x.extra):'칼퇴'}</span>`;
-  });
-  const n=c.rows.length,v=c.rows.filter(x=>x.type==='vac').length;
-  $('#days-sub').textContent=n?`${dl(c.rows[0].k)}부터 · 근무 ${c.m}일${v?` · 종일 휴가 ${v}일`:''}`:'';
-}
-
 /* ---------- 달력 ---------- */
 function renderCalendar(c){
   const byK={};c.rows.forEach(x=>byK[x.k]=x);
@@ -554,32 +479,22 @@ function renderCalendar(c){
   });
   const stale=c.rows.length&&from<TODAY;
   const range=a=>a.length===1?dl(a[0].k):`${md(a[0].k)}~${md(a[a.length-1].k)}`;
-  const Ph=c.P/60;
-  const groups=c.kind==='over'
+  const Ph=c.P/60,st=toMin(S.start)??600,baseDay=Math.max(0,CORE_END-st-LUNCH);
+  $('#cal-sum').innerHTML=`<div><span class="k">오늘</span><b class="num">${dl(TODAY)}</b></div>
+    <div class="s-ot"><span class="k">야근 (${Ph}h)</span><b class="num">${ot}번</b></div>
+    <div class="s-ok"><span class="k">그 뒤 칼퇴</span><b class="num">${free}번</b></div>`;
+  const si=$('#cal-start');if(document.activeElement!==si)si.value=S.start;
+  document.querySelectorAll('[data-start]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.start===S.start)));
+  $('#free-lv').textContent=`칼퇴 ${clock(st+baseDay+LUNCH)} (${dur(baseDay)})`;
+  $('#ot-val').textContent=`${Ph}시간`;
+  $('#ot-lv').textContent=`→ ${leaveText(leaveOf({start:S.start,vac:0},c.P))} 퇴근`;
+  $('#cal-grid').innerHTML=['월','화','수','목','금'].map(w=>`<div class="cal-h" aria-hidden="true">${w}</div>`).join('')+cells;
+  $('#cal-groups').innerHTML=c.kind==='over'
     ?`<span><i class="sw ot"></i>야근 ${Ph}시간으로는 부족해서 남은 날 모두 더 길게 일해야 합니다.</span>`
     :`${otRows.length?`<span><i class="sw ot"></i>파란 묶음 ${range(otRows)} · ${Ph}시간 야근 ${ot}번</span>`:''}
       ${freeRows.length?`<span><i class="sw free"></i>노란 묶음 ${range(freeRows)} · 칼퇴 ${free}번</span>`:''}`;
-  return `<section class="panel block cal-block" aria-label="이 달 야근·칼퇴 달력">
-    <div class="cal-sum">
-      <div><span class="k">오늘</span><b class="num">${dl(TODAY)}</b></div>
-      <div class="s-ot"><span class="k">야근 (${Ph}h)</span><b class="num">${ot}번</b></div>
-      <div class="s-ok"><span class="k">그 뒤 칼퇴</span><b class="num">${free}번</b></div>
-    </div>
-    <div class="otstep">
-      <span>야근 기준</span>
-      <button class="iconbtn" type="button" data-ot-step="-0.5" aria-label="야근 기준 30분 줄이기">−</button>
-      <b class="num">${Ph}시간</b>
-      <button class="iconbtn" type="button" data-ot-step="0.5" aria-label="야근 기준 30분 늘리기">+</button>
-      <span class="lv num">→ ${leaveText(leaveOf({start:S.start,vac:0},c.P))} 퇴근</span>
-    </div>
-    <div class="cal" role="grid">
-      ${['월','화','수','목','금'].map(w=>`<div class="cal-h" aria-hidden="true">${w}</div>`).join('')}
-      ${cells}
-    </div>
-    <p class="groups">${groups}</p>
-    <p class="cal-legend"><span><i class="sw ot"></i>야근</span><span><i class="sw free"></i>칼퇴</span><span><i class="sw vac"></i>휴가</span><span><i class="sw hol"></i>휴일</span>${vac?`<span>종일 휴가 ${vac}일</span>`:''}</p>
-    ${stale?`<p class="cal-stale">마지막 기록(${dl(c.rows[0].k)} 기준) 이후 지난 날도 계획에 들어가 있어요. 오늘 값을 새로 기록하면 정확해집니다.</p>`:''}
-  </section>`;
+  const sl=$('#cal-stale');sl.hidden=!stale;
+  if(stale)sl.textContent=`마지막 기록(${dl(c.rows[0].k)} 기준) 이후 지난 날도 계획에 들어가 있어요. 오늘 값을 새로 기록하면 정확해집니다.`;
 }
 
 /* ---------- 결과 ---------- */
@@ -603,10 +518,10 @@ function renderResult(c,log){
       break;
     case 'over':
       tone='warn';big=`하루 ${dur(c.P)}로는 부족`;
-      sub=`남은 ${c.m}일 동안 하루 평균 ${dur(c.avg)}씩 일해야 목표를 채웁니다. ‘야근하는 날 근무’를 늘려 보세요.`;break;
+      sub=`남은 ${c.m}일 동안 하루 평균 ${dur(c.avg)}씩 일해야 목표를 채웁니다. 달력의 ‘야근 기준’을 늘려 보세요.`;break;
     case 'short':
       tone='warn';eyebrow='이번 달';big='남은 근무일 없음';
-      sub=`목표까지 ${dur(c.R)} 부족합니다. 기록 날짜와 휴일 설정을 확인하세요.`;break;
+      sub=`목표까지 ${dur(c.R)} 부족합니다. 기록 날짜를 확인하세요.`;break;
   }
   const baseDay=Math.max(0,CORE_END-st-LUNCH);
   const basis=log?`${dl(log.d)} ${log.when==='after'?'퇴근 후':'출근 전'} 기록 ${hm(log.v)} 기준`:'기록 없음 · 1일부터 0시간으로 계산';
@@ -615,7 +530,7 @@ function renderResult(c,log){
     <p class="foot"><span>${basis}</span><span>칼퇴 = <b class="num">${clock(st+baseDay+LUNCH)}</b> 퇴근 · 출근 ${S.start||'10:00'} 기준 하루 ${dur(baseDay)}</span></p>
   </section>`;
 
-  $('#calendar').innerHTML=renderCalendar(c);
+  renderCalendar(c);
 
   const maxTotal=c.T+c.cap;
   const pace=log?paceOf(log,c.T):0,diff=c.acc-pace;
@@ -686,19 +601,15 @@ function syncSettings(){
   $('#cap').value=cv!=null&&cv!==''?cv:h1(a.cap);
   $('#tgt-hint').innerHTML=tv!=null&&tv!==''?`직접 입력 · <button class="linkbtn" type="button" id="tgt-reset">자동값 ${h1(a.t)}h로</button>`:`min(${a.wdays}일×8h=${h1(a.a)}, ${a.days}÷7×40=${h1(a.b)})`;
   $('#cap-hint').innerHTML=cv!=null&&cv!==''?`직접 입력 · <button class="linkbtn" type="button" id="cap-reset">자동값 ${h1(a.cap)}h로</button>`:`${a.days}÷7×12h`;
-  $('#start').value=S.start;$('#ot').value=S.otHours;
   const tr=$('#tgt-reset');if(tr)tr.onclick=()=>{delete S.tgt[S.month];syncSettings();update()};
   const cr=$('#cap-reset');if(cr)cr.onclick=()=>{delete S.cap[S.month];syncSettings();update()};
 }
-let curFrom=null;
 function update(){
-  const log=latestLog(),from=fromOf(log);
-  if(from!==curFrom){curFrom=from;renderRows(from)}
-  const c=compute(log?log.v:0,from);
-  $('#ot-hint').textContent=`→ 출근 ${S.start||'10:00'}이면 ${leaveText(leaveOf({start:S.start,vac:0},Math.round((parseFloat(S.otHours)||0)*60)))} 퇴근`;
-  paintRows(c);renderResult(c,log);renderLogs();save();
+  const log=latestLog();
+  const c=compute(log?log.v:0,fromOf(log));
+  renderResult(c,log);renderLogs();save();
 }
-function refreshAll(){syncSettings();curFrom=null;update()}
+function refreshAll(){syncSettings();update()}
 
 $('#prev').onclick=()=>shiftMonth(-1);
 $('#next').onclick=()=>shiftMonth(1);
@@ -709,34 +620,15 @@ $('#tgt').addEventListener('input',e=>{S.tgt[S.month]=e.target.value;update()});
 $('#tgt').addEventListener('change',syncSettings);
 $('#cap').addEventListener('input',e=>{S.cap[S.month]=e.target.value;update()});
 $('#cap').addEventListener('change',syncSettings);
-$('#start').addEventListener('input',e=>{if(!e.target.value)return;S.start=e.target.value;curFrom=null;update()});
-$('#ot').addEventListener('input',e=>{S.otHours=e.target.value;update()});
-function setOt(h){h=Math.min(16,Math.max(7.5,Math.round(h*2)/2));S.otHours=h;$('#ot').value=h;update()}
+$('#cal-start').addEventListener('input',e=>{if(!e.target.value)return;S.start=e.target.value;update()});
+function setOt(h){h=Math.min(16,Math.max(7.5,Math.round(h*2)/2));S.otHours=h;update()}
 const onOtClick=e=>{
-  const st=e.target.closest('[data-ot-step]');if(st){setOt((parseFloat(S.otHours)||9)+parseFloat(st.dataset.otStep));$('[data-ot-step="'+st.dataset.otStep+'"]')?.focus();return}
+  const sb=e.target.closest('[data-start]');if(sb){S.start=sb.dataset.start;$('#cal-start').value=S.start;update();return}
+  const st=e.target.closest('[data-ot-step]');if(st){setOt((parseFloat(S.otHours)||9)+parseFloat(st.dataset.otStep));return}
   const row=e.target.closest('[data-ot-set]');if(row)setOt(parseFloat(row.dataset.otSet));
 };
 $('#result').addEventListener('click',onOtClick);
 $('#calendar').addEventListener('click',onOtClick);
-
-$('#days').addEventListener('input',e=>{
-  const t=e.target,row=t.closest('.day');if(!row||t.tagName==='SELECT'||!t.dataset.f)return;
-  ensure(row.dataset.k)[t.dataset.f]=t.value;update();
-});
-$('#days').addEventListener('change',e=>{
-  const t=e.target;if(t.tagName!=='SELECT')return;
-  const k=t.closest('.day').dataset.k;ensure(k).status=t.value;
-  refreshAll();
-  const s=document.getElementById('st-'+k);if(s)s.focus();
-});
-let armed=null;
-$('#clear').onclick=()=>{
-  const b=$('#clear');
-  if(!armed){b.textContent='한 번 더 누르면 지웁니다';b.classList.add('armed');armed=setTimeout(()=>{armed=null;b.textContent='이 달 입력 지우기';b.classList.remove('armed')},3000);return}
-  clearTimeout(armed);armed=null;b.textContent='이 달 입력 지우기';b.classList.remove('armed');
-  monthDates().forEach(k=>delete S.days[k]);delete S.logs[S.month];delete S.tgt[S.month];delete S.cap[S.month];
-  refreshAll();
-};
 
 resetLogForm();
 refreshAll();
