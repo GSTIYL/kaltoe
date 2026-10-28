@@ -38,7 +38,11 @@ body{height:100%;margin:0;background:var(--bg);color:var(--ink);font-family:var(
 .wrap{max-width:540px;height:100%;min-height:560px;margin:0 auto;display:flex;flex-direction:column;gap:8px}
 .num{font-family:var(--f-num);font-variant-numeric:tabular-nums}
 h1,h2{margin:0}
+.top{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .top h1{font-size:18px;font-weight:700;letter-spacing:-.02em;line-height:1.3}
+.top-act{display:flex;gap:6px}
+.top-act .ghost{padding:2px 9px}
+.linkbtn{border:0;background:none;padding:0 2px;color:var(--accent);font-weight:600;text-decoration:underline}
 .panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;min-width:0}
 button{font:inherit;color:inherit;cursor:pointer}
 button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
@@ -87,7 +91,8 @@ input[type="date"],input[type="time"],input.num{font-family:var(--f-num);font-va
 .stepper b{flex:1;text-align:center;font-size:14px;color:var(--ot)}
 .ctl-row .lv{justify-self:end;white-space:nowrap}
 .ctl-row .lv.free{color:var(--ok)}
-.cal{flex:1 1 auto;min-height:0;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));grid-template-rows:auto;grid-auto-rows:minmax(38px,1fr);gap:4px}
+/* 칸은 최소 34px. 경고가 여러 줄이라 모자라면 겹치지 않고 화면이 늘어남 */
+.cal{flex:1 1 auto;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));grid-template-rows:auto;grid-auto-rows:minmax(34px,1fr);gap:4px}
 .cal-h{font-size:11px;color:var(--muted);text-align:center}
 .cell{border-radius:6px;padding:4px 6px;display:flex;flex-direction:column;justify-content:space-between;background:var(--sunk);color:var(--muted);font-size:11px;line-height:1.2;min-width:0;min-height:0;overflow:hidden}
 .cell .row1{display:flex;justify-content:space-between;align-items:baseline;gap:2px}
@@ -111,13 +116,15 @@ input[type="date"],input[type="time"],input.num{font-family:var(--f-num);font-va
 </style>
 
 <div class="wrap">
-  <header class="top"><h1>칼퇴 계산기</h1></header>
+  <header class="top"><h1>칼퇴 계산기</h1>
+    <span class="top-act"><button class="ghost" type="button" id="bk-out">백업</button><button class="ghost" type="button" id="bk-in">복원</button></span>
+  </header>
 
   <section class="panel logbox" aria-label="채운 시간 기록">
     <form class="logform" id="logform" novalidate>
       <input id="log-date" type="date" aria-label="기준 날짜" required>
       <input id="log-val" class="num" type="text" autocomplete="off" placeholder="채운 시간 183:28" aria-label="채운 시간 (Flex 전체 값)" required>
-      <select id="log-when" aria-label="기준 시점"><option value="before">출근 전</option><option value="after">퇴근 후</option></select>
+      <select id="log-when" aria-label="기준 시점"><option value="before">출근 전</option><option value="now">근무 중</option><option value="after">퇴근 후</option></select>
       <button class="primary" type="submit">기록</button>
     </form>
     <p class="msg" id="log-msg" hidden></p>
@@ -171,8 +178,8 @@ const WD=['일','월','화','수','목','금','토'];
 const md=k=>{const d=parse(k);return `${d.getMonth()+1}/${d.getDate()}`};
 const wd=k=>WD[parse(k).getDay()];
 const dl=k=>`${md(k)} (${wd(k)})`;
-const now=new Date();
-const TODAY=ymd(now);
+let TODAY=ymd(new Date());   // 앱을 켜둔 채 날짜가 바뀌면 refreshDay()가 갱신
+const nowMin=()=>{const n=new Date();return n.getHours()*60+n.getMinutes()};
 const KEY='kaltoe-flex-v1';
 const CORE_END=18*60, NOON=12*60, LUNCH=60;
 
@@ -185,6 +192,8 @@ const HOL={
 };
 const HOL_YEARS=new Set(Object.keys(HOL).map(k=>k.slice(0,4)));
 
+// 출근은 09:00~10:00만 허용
+const clampStart=m=>Math.min(600,Math.max(540,m??600));
 function defaultState(){
   return {month:TODAY.slice(0,7),start:'10:00',otHours:9,logs:{}};
 }
@@ -193,6 +202,7 @@ function load(){
     const raw=localStorage.getItem(KEY);if(!raw)return null;
     const s=Object.assign(defaultState(),JSON.parse(raw));
     s.month=TODAY.slice(0,7);if(!s.logs)s.logs={};
+    s.start=clock(clampStart(toMin(s.start)));
     // 첫 버전의 '지금까지 채운 시간'을 기록 1건으로 옮김
     if(s.acc){for(const mo in s.acc){const a=s.acc[mo],v=(parseInt(a.h)||0)*60+(parseInt(a.m)||0);
       const f=(s.from&&s.from[mo])||TODAY;if(v&&!(s.logs[mo]||[]).length&&f.slice(0,7)===mo)s.logs[mo]=[{d:f,v,when:'before'}]}}
@@ -206,7 +216,7 @@ let S=load()||defaultState();
 
 const monthDates=(mo=S.month)=>{const [y,m]=mo.split('-').map(Number);const out=[];for(let d=new Date(y,m-1,1);d.getMonth()===m-1;d=addDays(d,1))out.push(ymd(d));return out};
 const isWeekday=k=>{const g=parse(k).getDay();return g!==0&&g!==6};
-const startMin=()=>toMin(S.start)??600;
+const startMin=()=>clampStart(toMin(S.start));
 const baseDay=()=>Math.max(0,CORE_END-startMin()-LUNCH);   // 18:00 퇴근 시 하루 근무
 // 퇴근 시각 = 출근 + 근무 + 점심(정오를 넘기면) + 8시간 초과 연장 4시간마다 휴게 30분
 function leaveOf(work){
@@ -214,24 +224,37 @@ function leaveOf(work){
   if(s<NOON&&t>NOON)t+=LUNCH;
   return t+Math.floor(Math.max(0,work-480)/240)*30;
 }
-const workdays=()=>monthDates().filter(k=>isWeekday(k)&&!HOL[k]);
+const workdays=mo=>monthDates(mo).filter(k=>isWeekday(k)&&!HOL[k]);
 // 회사 기준: 목표 = min(평일 수 × 8h, 월 일수 ÷ 7 × 40h), 연장 가능 = 월 일수 ÷ 7 × 12h
-const days=()=>monthDates().length;
-const targetMin=()=>Math.min(workdays().length*480,Math.round(days()/7*40*60));
-const capMin=()=>Math.round(days()/7*12*60);
+const days=mo=>monthDates(mo).length;
+const targetMin=mo=>Math.min(workdays(mo).length*480,Math.round(days(mo)/7*40*60));
+const capMin=mo=>Math.round(days(mo)/7*12*60);
 
 /* ---------- 채운 시간 기록 ---------- */
-const logsOf=()=>(S.logs[S.month]||[]).slice().sort((a,b)=>a.d<b.d?-1:a.d>b.d?1:(a.when==='after')-(b.when==='after'));
+// 기준 시점: 출근 전 → 근무 중(기록 시각 t) → 퇴근 후
+const RANK={before:0,now:1,after:2};
+const whenText=l=>l.when==='after'?'퇴근 후':l.when==='now'?`근무 중 ${clock(l.t)}`:'출근 전';
+const logsOf=()=>(S.logs[S.month]||[]).slice().sort((a,b)=>a.d<b.d?-1:a.d>b.d?1:RANK[a.when]-RANK[b.when]);
 const latestLog=()=>{const l=logsOf();return l.length?l[l.length-1]:null};
 const fromOf=log=>log?(log.when==='after'?ymd(addDays(parse(log.d),1)):log.d):monthDates()[0];
+// t 시각까지 오늘 일한 시간(점심 제외)
+function workedAt(t){
+  const s=startMin();let w=Math.max(0,t-s);
+  if(s<NOON&&t>NOON)w-=Math.min(LUNCH,t-NOON);
+  return Math.max(0,w);
+}
+// 근무 중 기록은 오늘 이미 일한 만큼 빼고, 오늘 하루를 계획에 다시 넣음
+const accOf=log=>!log?0:log.when==='now'?Math.max(0,log.v-workedAt(log.t)):log.v;
 function paceOf(log,T){
   const W=workdays();if(!W.length)return 0;
   const done=W.filter(k=>log.when==='after'?k<=log.d:k<log.d).length;
   return Math.round(T*done/W.length);
 }
 function parseDur(s){
-  s=String(s||'').trim().replace(/\s+/g,'');if(!s)return null;
+  s=String(s||'').trim();if(!s)return null;
   let m;
+  if((m=s.match(/^(\d+)\s+(\d{1,2})$/)))return +m[1]*60+ +m[2];   // 183 28
+  s=s.replace(/\s+/g,'');
   if((m=s.match(/^(\d+):(\d{1,2})$/)))return +m[1]*60+ +m[2];
   if((m=s.match(/^(\d+)(?:시간|h|H)(?:(\d{1,2})(?:분|m|M)?)?$/)))return +m[1]*60+(+m[2]||0);
   if((m=s.match(/^(\d{1,2})(?:분|m|M)$/)))return +m[1];
@@ -243,10 +266,11 @@ function parseDur(s){
 function compute(acc,from){
   const P=Math.round((parseFloat(S.otHours)||0)*60),base=baseDay();
   const rows=monthDates().filter(k=>k>=from&&isWeekday(k)).map(k=>({k,hol:!!HOL[k],base:HOL[k]?0:base,extra:0}));
-  const work=rows.filter(x=>!x.hol);
+  // 기록 이후 이미 지난 날은 18:00 퇴근으로 가정하고, 야근은 오늘부터 배정
+  const work=rows.filter(x=>!x.hol&&x.k>=TODAY),pastN=rows.filter(x=>!x.hol&&x.k<TODAY).length;
   const T=targetMin(),cap=capMin();
-  const R=T-acc,E=R-work.length*base;
-  const c={rows,work,m:work.length,acc,T,cap,P,R,E,k:0,kind:''};
+  const R=T-acc-pastN*base,E=R-work.length*base;
+  const c={rows,work,m:work.length,pastN,acc,T,cap,P,R,E,k:0,kind:''};
   if(c.m===0)c.kind=R<=0?'achieved':'short';
   else if(E<=0)c.kind=R<=0?'achieved':'free';
   else{
@@ -268,43 +292,90 @@ const freeText=c=>c.kind==='over'||c.kind==='short'?'부족':c.first?md(c.first.
 function renderLatest(c,log){
   const box=$('#logs');
   if(!log){box.innerHTML='<span>기록 없음 · 이 달 1일부터 0시간으로 계산</span>';return}
-  const diff=log.v-paceOf(log,c.T),i=(S.logs[S.month]||[]).indexOf(log);
-  box.innerHTML=`<span><b class="num">${md(log.d)}</b> ${log.when==='after'?'퇴근 후':'출근 전'} <b class="num">${hm(log.v)}</b> · 페이스 <b class="num ${diff>=0?'delta-up':'delta-down'}">${shm(diff)}</b> · 칼퇴 <b class="num">${freeText(c)}</b></span>
+  const diff=c.acc-paceOf(log,c.T),i=(S.logs[S.month]||[]).indexOf(log);
+  box.innerHTML=`<span><b class="num">${md(log.d)}</b> ${whenText(log)} <b class="num">${hm(log.v)}</b> · 페이스 <b class="num ${diff>=0?'delta-up':'delta-down'}">${shm(diff)}</b> · 칼퇴 <b class="num">${freeText(c)}</b></span>
     <button class="xbtn" type="button" data-del="${i}" aria-label="${md(log.d)} 기록 삭제">×</button>`;
 }
-let msgTimer=null;
-function say(text,err){
+let msgTimer=null,undo=null;
+// hold=0이면 자동으로 숨기지 않음(입력 미리보기), undoable이면 '되돌리기' 버튼을 붙임
+function say(text,err,{hold,undoable}={}){
   const m=$('#log-msg');m.textContent=text;m.className='msg'+(err?' err':'');m.hidden=false;
-  clearTimeout(msgTimer);msgTimer=setTimeout(()=>{m.hidden=true},err?5000:2500);
+  if(undoable)m.insertAdjacentHTML('beforeend',' <button class="linkbtn" type="button" data-undo>되돌리기</button>');
+  clearTimeout(msgTimer);
+  if(hold!==0)msgTimer=setTimeout(()=>{m.hidden=true;undo=null},hold||(err||undoable?5000:2500));
 }
-// 기준 날짜는 항상 오늘로 시작하고, 지난 날짜는 고를 수 없음
+// 기준 날짜는 항상 오늘로 시작하고, 지난 날짜는 고를 수 없음. 시점은 지금 시각으로 고름
 function resetLogForm(){
   $('#log-date').min=TODAY;$('#log-date').value=TODAY;
-  $('#log-when').value=now.getHours()>=18?'after':'before';
+  const t=nowMin();
+  $('#log-when').value=t>=CORE_END?'after':t>=startMin()?'now':'before';
 }
+// 입력하는 동안 어떻게 읽었는지 보여줌(183.28 → 183시간 17분 같은 오해 방지)
+$('#log-val').addEventListener('input',e=>{
+  const raw=e.target.value.trim(),v=parseDur(raw);
+  if(!raw){$('#log-msg').hidden=true;return}
+  if(v==null)say('183:28 · 183 28 · 183시간 28분 형식으로 입력',true,{hold:0});
+  else say(`= ${dur(v)}`,false,{hold:0});
+});
 $('#logform').addEventListener('submit',e=>{
   e.preventDefault();
   const d=$('#log-date').value,v=parseDur($('#log-val').value),when=$('#log-when').value;
   if(!d)return say('기준 날짜를 고르세요.',true);
   if(d<TODAY){$('#log-date').value=TODAY;return say('지난 날짜로는 기록할 수 없습니다.',true)}
   if(v==null){$('#log-val').focus();return say('채운 시간을 183:28 또는 183시간 28분 형식으로 입력하세요.',true)}
-  const mo=d.slice(0,7),list=S.logs[mo]||(S.logs[mo]=[]);
+  if(when==='now'&&d!==TODAY)return say('근무 중 기록은 오늘 날짜만 됩니다.',true);
+  const mo=d.slice(0,7),lim=targetMin(mo)+capMin(mo);
+  if(v>lim){$('#log-val').focus();return say(`${hm(v)}은 이 달 상한 ${hm(lim)}보다 큽니다. 입력을 확인하세요.`,true)}
+  const list=S.logs[mo]||(S.logs[mo]=[]),log={d,v,when};
+  if(when==='now')log.t=nowMin();
   const same=list.findIndex(l=>l.d===d&&l.when===when);
-  if(same>=0)list[same].v=v;else list.push({d,v,when});
+  if(same>=0)list[same]=log;else list.push(log);
   S.month=mo;
-  say(`${md(d)} ${when==='after'?'퇴근 후':'출근 전'} ${dur(v)} ${same>=0?'수정':'기록'}했습니다.`);
+  say(`${md(d)} ${whenText(log)} ${dur(v)} ${same>=0?'수정':'기록'}했습니다.`);
   $('#log-val').value='';$('#log-date').value=TODAY;
   update();
 });
 $('#logs').addEventListener('click',e=>{
   const b=e.target.closest('[data-del]');if(!b)return;
-  (S.logs[S.month]||[]).splice(+b.dataset.del,1);update();
+  const list=S.logs[S.month]||[],i=+b.dataset.del,[gone]=list.splice(i,1);
+  if(!gone)return;
+  undo={mo:S.month,i,log:gone};update();
+  say(`${md(gone.d)} ${whenText(gone)} 기록을 지웠습니다.`,false,{undoable:true});
+});
+$('#log-msg').addEventListener('click',e=>{
+  if(!e.target.closest('[data-undo]')||!undo)return;
+  const list=S.logs[undo.mo]||(S.logs[undo.mo]=[]);
+  list.splice(undo.i,0,undo.log);S.month=undo.mo;undo=null;
+  $('#log-msg').hidden=true;update();
+});
+
+/* ---------- 백업·복원(기록은 기기별 저장이라 옮길 때 사용) ---------- */
+$('#bk-out').addEventListener('click',async()=>{
+  const text=JSON.stringify({kaltoe:1,start:S.start,otHours:S.otHours,logs:S.logs});
+  try{await navigator.clipboard.writeText(text);say('기록을 복사했습니다. 메모 등에 붙여넣어 보관하세요.')}
+  catch(err){try{prompt('아래 내용을 복사해 보관하세요.',text)}catch(e2){say('복사할 수 없는 환경입니다.',true)}}
+});
+$('#bk-in').addEventListener('click',()=>{
+  let text;try{text=prompt('백업한 내용을 붙여넣으세요. 지금 기록은 바뀝니다.')}catch(e){return say('붙여넣을 수 없는 환경입니다.',true)}
+  if(!text)return;
+  try{
+    const o=JSON.parse(text),logs={};
+    if(!o||typeof o.logs!=='object'||Array.isArray(o.logs))throw 0;
+    for(const mo in o.logs){
+      if(!/^\d{4}-\d{2}$/.test(mo)||!Array.isArray(o.logs[mo]))throw 0;
+      logs[mo]=o.logs[mo].filter(l=>l&&/^\d{4}-\d{2}-\d{2}$/.test(l.d)&&Number.isFinite(l.v)&&['before','now','after'].includes(l.when)&&(l.when!=='now'||Number.isFinite(l.t)))
+        .map(l=>l.when==='now'?{d:l.d,v:l.v,when:l.when,t:l.t}:{d:l.d,v:l.v,when:l.when});
+    }
+    S.logs=logs;
+    if(toMin(o.start)!=null)S.start=clock(clampStart(toMin(o.start)));
+    if(Number.isFinite(+o.otHours))S.otHours=Math.min(16,Math.max(7.5,+o.otHours));
+    S.month=TODAY.slice(0,7);update();say('복원했습니다.');
+  }catch(e){say('백업 내용을 읽지 못했습니다.',true)}
 });
 
 /* ---------- 달력 ---------- */
 function renderCalendar(c){
   const byK={};c.rows.forEach(x=>byK[x.k]=x);
-  const from=c.rows.length?c.rows[0].k:'9999';
   const ks=monthDates().filter(isWeekday);
   let cells=['월','화','수','목','금'].map(w=>`<div class="cal-h" aria-hidden="true">${w}</div>`).join('');
   const lead=ks.length?parse(ks[0]).getDay()-1:0;
@@ -314,7 +385,7 @@ function renderCalendar(c){
     if(k<TODAY){cls='past';lab=HOL[k]||''}
     else if(!x)cls='off';
     else if(x.hol){cls='hol';lab=HOL[k]}
-    else if(x.extra>0){cls='ot';lab='야근 필요';t=clock(x.leave)}
+    else if(x.extra>0){cls='ot';lab='야근 필요';t=x.leave>=1440?'24시+':clock(x.leave)}
     else{cls='free';lab='칼퇴 가능';t=clock(x.leave)}
     cells+=`<div class="cell ${cls}${k===TODAY?' today':''}"${k===TODAY?' aria-current="date"':''} title="${dl(k)} ${lab}${t?' '+t+' 퇴근':''}">
       <span class="row1"><b class="num">${parse(k).getDate()}</b>${t?`<span class="num t">${t}</span>`:''}</span><span class="lab">${lab}</span></div>`;
@@ -338,19 +409,36 @@ function renderCalendar(c){
   $('#ot-val').textContent=`${c.P/60}시간`;
   $('#ot-lv').textContent=`→ ${leaveText(leaveOf(c.P))} 퇴근`;
 
-  const warn=c.kind==='over'?`야근 ${c.P/60}시간으로는 부족합니다. 남은 날 하루 평균 ${dur(c.avg)}씩 필요합니다.`
-    :c.kind==='short'?`남은 근무일이 없습니다. 목표까지 ${dur(c.R)} 부족합니다.`:'';
+  // 지난 달은 계획할 날이 없으니 경고·안내를 띄우지 않음
+  const cur=S.month===TODAY.slice(0,7),ahead=S.month>=TODAY.slice(0,7);
+  const warn=!ahead?'':c.kind==='over'?`야근 ${c.P/60}시간으론 부족 · 남은 날 하루 ${dur(c.avg)}씩 필요`
+    :c.kind==='short'?`남은 근무일 없음 · 목표까지 ${dur(c.R)} 부족`:'';
   $('#cal-warn').textContent=warn;$('#cal-warn').hidden=!warn;
-  const stale=c.rows.length&&from<TODAY,sl=$('#cal-stale');sl.hidden=!stale;
-  if(stale)sl.textContent=`마지막 기록 이후 지난 날도 계획에 들어가 있어요. 오늘 값을 기록하면 정확해집니다.`;
+  const stale=cur&&c.pastN>0,sl=$('#cal-stale');sl.hidden=!stale;
+  if(stale)sl.textContent=`기록 없는 지난 ${c.pastN}일은 18:00 퇴근으로 계산 · 오늘 값을 기록하세요`;
 }
 
 function update(){
-  const log=latestLog(),c=compute(log?log.v:0,fromOf(log));
+  const log=latestLog(),c=compute(accOf(log),fromOf(log));
   renderCalendar(c);renderLatest(c,log);save();
 }
 function shiftMonth(d){const [y,m]=S.month.split('-').map(Number);const x=new Date(y,m-1+d,1);S.month=`${x.getFullYear()}-${pad(x.getMonth()+1)}`;update()}
 $('#cal-start').addEventListener('input',e=>{if(!e.target.value)return;S.start=e.target.value;update()});
+// 입력이 끝나면 09:00~10:00 범위로 맞춤
+$('#cal-start').addEventListener('change',e=>{S.start=clock(startMin());e.target.value=S.start;update()});
+// 앱을 켜둔 채(백그라운드 포함) 날짜가 바뀌면 오늘·지난 날·기록 날짜를 다시 맞춤
+function refreshDay(){
+  const k=ymd(new Date());if(k===TODAY)return;
+  if(S.month===TODAY.slice(0,7))S.month=k.slice(0,7);
+  TODAY=k;resetLogForm();update();
+}
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden)return;
+  refreshDay();if(!$('#log-val').value)resetLogForm();
+});
+setInterval(refreshDay,60000);
+// 브라우저가 저장 공간을 정리할 때 기록이 지워지지 않도록 요청
+try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist().catch(()=>{})}catch(e){}
 $('#calendar').addEventListener('click',e=>{
   const mb=e.target.closest('[data-mon]');if(mb){if(+mb.dataset.mon)shiftMonth(+mb.dataset.mon);else{S.month=TODAY.slice(0,7);update()}return}
   const st=e.target.closest('[data-ot-step]');
