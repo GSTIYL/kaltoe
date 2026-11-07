@@ -41,6 +41,17 @@ ${body}
 <script>
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+  // 켜둔 앱으로 돌아올 때 새 버전을 확인하고, 새 버전이 적용되면 한 번 새로고침(입력 중이면 다음 실행 때 반영)
+  const hadController = !!navigator.serviceWorker.controller;
+  let reloading = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    const typing = document.getElementById('log-val');
+    if (!hadController || reloading || (typing && typing.value)) return;
+    reloading = true; location.reload();
+  });
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) navigator.serviceWorker.getRegistration().then(r => r && r.update()).catch(() => {});
+  });
 }
 </script>
 </body>

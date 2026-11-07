@@ -172,7 +172,7 @@ input[type="date"],input[type="time"],input.num{font-family:var(--f-num);font-va
       </div>
     </div>
     <p class="cal-warn" id="cal-warn" hidden></p>
-    <div class="cal" id="cal-grid" role="grid"></div>
+    <div class="cal" id="cal-grid" role="group" aria-label="평일 달력"></div>
     <p class="cal-stale" id="cal-stale" hidden></p>
   </section>
 </div>
@@ -232,6 +232,7 @@ let S=load()||defaultState();
 
 const monthDates=(mo=S.month)=>{const [y,m]=mo.split('-').map(Number);const out=[];for(let d=new Date(y,m-1,1);d.getMonth()===m-1;d=addDays(d,1))out.push(ymd(d));return out};
 const isWeekday=k=>{const g=parse(k).getDay();return g!==0&&g!==6};
+const isWorkday=k=>isWeekday(k)&&!HOL[k];
 const startMin=()=>clampStart(toMin(S.start));
 const baseDay=()=>Math.max(0,CORE_END-startMin()-LUNCH);   // 18:00 퇴근 시 하루 근무
 // 퇴근 시각 = 출근 + 근무 + 점심(정오를 넘기면) + 8시간 초과 연장 4시간마다 휴게 30분
@@ -240,7 +241,7 @@ function leaveOf(work){
   if(s<NOON&&t>NOON)t+=LUNCH;
   return t+Math.floor(Math.max(0,work-480)/240)*30;
 }
-const workdays=mo=>monthDates(mo).filter(k=>isWeekday(k)&&!HOL[k]);
+const workdays=mo=>monthDates(mo).filter(isWorkday);
 // 회사 기준: 목표 = min(평일 수 × 8h, 월 일수 ÷ 7 × 40h), 연장 가능 = 월 일수 ÷ 7 × 12h
 const days=mo=>monthDates(mo).length;
 const targetMin=mo=>Math.min(workdays(mo).length*480,Math.round(days(mo)/7*40*60));
@@ -259,8 +260,8 @@ function workedAt(t){
   if(s<NOON&&t>NOON)w-=Math.min(LUNCH,t-NOON);
   return Math.max(0,w);
 }
-// 근무 중 기록은 오늘 이미 일한 만큼 빼고, 오늘 하루를 계획에 다시 넣음
-const accOf=log=>!log?0:log.when==='now'?Math.max(0,log.v-workedAt(log.t)):log.v;
+// 근무 중 기록은 오늘 이미 일한 만큼 빼고, 오늘 하루를 계획에 다시 넣음(근무일만)
+const accOf=log=>!log?0:log.when==='now'&&isWorkday(log.d)?Math.max(0,log.v-workedAt(log.t)):log.v;
 function paceOf(log,T){
   const W=workdays();if(!W.length)return 0;
   const done=W.filter(k=>log.when==='after'?k<=log.d:k<log.d).length;
@@ -290,12 +291,14 @@ function compute(acc,from){
   if(c.m===0)c.kind=R<=0?'achieved':'short';
   else if(E<=0)c.kind=R<=0?'achieved':'free';
   else{
+    // 야근은 10분 단위로 올림(18:01 같은 자투리 야근 방지, 목표보다 살짝 넉넉해짐)
+    const up10=m=>Math.ceil(m/10)*10;
     let rem=E;
-    for(let i=0;i<work.length&&rem>0;i++){const add=Math.min(rem,Math.max(0,P-base));work[i].extra=add;rem-=add;if(add>0)c.k=i+1}
+    for(let i=0;i<work.length&&rem>0;i++){const add=Math.min(up10(rem),Math.max(0,P-base));work[i].extra=add;rem-=add;if(add>0)c.k=i+1}
     if(rem>0){
       c.kind='over';c.avg=Math.ceil(R/c.m);
-      const each=Math.floor(E/c.m),r0=E-each*c.m;
-      work.forEach((x,i)=>{x.extra=each+(i<r0?1:0)});c.k=c.m;
+      const each=up10(E/c.m);
+      work.forEach(x=>{x.extra=each});c.k=c.m;
     }else c.kind='plan';
   }
   rows.forEach(x=>{x.min=x.base+x.extra;x.leave=x.hol?null:leaveOf(x.min)});
@@ -324,7 +327,7 @@ function say(text,err,{hold,undoable}={}){
 function resetLogForm(){
   $('#log-date').min=TODAY;$('#log-date').value=TODAY;
   const t=nowMin();
-  $('#log-when').value=t>=CORE_END?'after':t>=startMin()?'now':'before';
+  $('#log-when').value=t>=CORE_END?'after':t>=startMin()&&isWorkday(TODAY)?'now':'before';
 }
 // 입력하는 동안 어떻게 읽었는지 보여줌(183.28 → 183시간 17분 같은 오해 방지)
 $('#log-val').addEventListener('input',e=>{
@@ -340,6 +343,7 @@ $('#logform').addEventListener('submit',e=>{
   if(d<TODAY){$('#log-date').value=TODAY;return say('지난 날짜로는 기록할 수 없습니다.',true)}
   if(v==null){$('#log-val').focus();return say('채운 시간을 183:28 또는 183시간 28분 형식으로 입력하세요.',true)}
   if(when==='now'&&d!==TODAY)return say('근무 중 기록은 오늘 날짜만 됩니다.',true);
+  if(when==='now'&&!isWorkday(d))return say('주말·공휴일은 출근 전이나 퇴근 후로 기록하세요.',true);
   const mo=d.slice(0,7),lim=targetMin(mo)+capMin(mo);
   if(v>lim){$('#log-val').focus();return say(`${hm(v)}은 이 달 상한 ${hm(lim)}보다 큽니다. 입력을 확인하세요.`,true)}
   const list=S.logs[mo]||(S.logs[mo]=[]),log={d,v,when};
@@ -399,7 +403,7 @@ function renderCalendar(c){
   ks.forEach(k=>{
     const x=byK[k];let cls,lab='',t='';
     if(k<TODAY){cls='past';lab=HOL[k]||''}
-    else if(!x)cls='off';
+    else if(!x){cls='off';lab=isWorkday(k)?'퇴근 기록됨':HOL[k]||''}   // 퇴근 후 기록이 있는 오늘(또는 그 이전 날)
     else if(x.hol){cls='hol';lab=HOL[k]}
     else if(x.extra>0){cls='ot';lab='야근 필요';t=x.leave>=1440?'24시+':clock(x.leave)}
     else{cls='free';lab='칼퇴 가능';t=clock(x.leave)}
@@ -468,6 +472,17 @@ update();
 <script>
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+  // 켜둔 앱으로 돌아올 때 새 버전을 확인하고, 새 버전이 적용되면 한 번 새로고침(입력 중이면 다음 실행 때 반영)
+  const hadController = !!navigator.serviceWorker.controller;
+  let reloading = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    const typing = document.getElementById('log-val');
+    if (!hadController || reloading || (typing && typing.value)) return;
+    reloading = true; location.reload();
+  });
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) navigator.serviceWorker.getRegistration().then(r => r && r.update()).catch(() => {});
+  });
 }
 </script>
 </body>
